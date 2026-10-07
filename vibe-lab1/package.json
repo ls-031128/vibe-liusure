@@ -1,0 +1,7 @@
+{
+  "name": "equipment-booking-demo",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/booking.test.js"
+  }
+}
