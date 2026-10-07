@@ -5,8 +5,8 @@
 今天完成了 T1 和 T2 的实际工作：
 
 - 基于 Day 1 项目方向，形成“宠物健康平台”MVP 的产品需求。
-- 完成 `docs/PRD.md`。
-- 完成并收缩 `docs/技术方案.md` 的 MVP 范围。
+- 完成并补齐根目录 `docs/PRD.md`。
+- 完成并收缩根目录 `docs/技术方案.md` 的 MVP 范围，后续核对时补回仓库中缺失的文档文件。
 - 明确当前只实现个人开发者能够在课程周期内完成的最小闭环。
 - 创建 `pet-health-platform/` 的 Next.js + TypeScript + App Router 项目骨架。
 - 创建首页，显示“宠物健康平台 MVP”和开发阶段说明。
@@ -55,7 +55,7 @@ AI 在以下方面提供了帮助：
 - 已创建 `day2` tag，并指向最新 commit `241d3fc`。
 - `feat/day2-requirements` 已 push 到 Gitee，`day2` tag 也已 push 到 Gitee。
 - Day 1 的 `vibe-lab1/` 没有被修改。
-- `docs/PRD.md` 和 `docs/技术方案.md` 没有被后续代码操作修改。
+- 后续代码操作没有修改 `docs/PRD.md` 和 `docs/技术方案.md`；本次文档补齐是单独的文档整理工作。
 
 ## 5. 今天遇到的最大问题
 
