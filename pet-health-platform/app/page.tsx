@@ -1,4 +1,5 @@
 import PetRegistrationForm from './pet-registration-form';
+import HealthAssessmentPanel from './health-assessment-panel';
 
 export default function HomePage() {
   return (
@@ -13,6 +14,7 @@ export default function HomePage() {
           当前处于开发阶段，本页面先支持宠物基本信息录入和本地保存。
         </p>
         <PetRegistrationForm />
+        <HealthAssessmentPanel />
       </section>
     </main>
   );

@@ -62,3 +62,16 @@ export async function POST(request: Request) {
     return json({ error: '保存宠物信息失败，请稍后重试' }, 500);
   }
 }
+
+export async function GET() {
+  try {
+    const pets = await prisma.pet.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return json(pets, 200);
+  } catch (error) {
+    console.error('Failed to list pets', error);
+    return json({ error: '读取宠物信息失败，请稍后重试' }, 500);
+  }
+}
