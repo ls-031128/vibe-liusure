@@ -1,22 +1,26 @@
--- 当前 MVP 不实际连接数据库。
--- 此文件仅用于展示未来数据结构。
--- 当前版本不保存用户健康文本。
--- 该 schema 只保留未来健康平台所需的最小关系，不代表本阶段已经启用持久化。
+-- Day 3 使用 SQLite + Prisma。
+-- 当前阶段是课程 MVP，只保存最小必要数据。
+-- 当前版本不保存用户原始健康文本、用户身份信息或疾病诊断数据。
+-- 本文件与 prisma/schema.prisma 保持一致，作为 SQLite 结构参考。
 
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE pets (
   id TEXT PRIMARY KEY,
-  name TEXT,
+  name TEXT NOT NULL,
   species TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  age INTEGER NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE health_assessments (
   id TEXT PRIMARY KEY,
   pet_id TEXT NOT NULL,
   risk_level TEXT NOT NULL,
-  model_version TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (pet_id) REFERENCES pets(id)
+  summary TEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE INDEX health_assessments_pet_id_idx
+  ON health_assessments(pet_id);

@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Pet {
+  id           String             @id
+  name         String
+  species      String
+  age          Int
+  createdAt    DateTime           @default(now()) @map("created_at")
+  assessments  HealthAssessment[]
+
+  @@map("pets")
+}
+
+model HealthAssessment {
+  id         String   @id
+  petId      String   @map("pet_id")
+  riskLevel  String   @map("risk_level")
+  summary    String
+  createdAt  DateTime @default(now()) @map("created_at")
+  pet        Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([petId])
+  @@map("health_assessments")
+}

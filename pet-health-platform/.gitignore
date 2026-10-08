@@ -1,4 +1,8 @@
 .next/
 node_modules/
 tsconfig.tsbuildinfo
-tsconfig.tsbuildinfo
+.env
+.env.*
+!.env.example
+prisma/*.db
+generated/
