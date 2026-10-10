@@ -1,0 +1,77 @@
+:root {
+  color-scheme: light;
+  --background: #f7f8fc;
+  --foreground: #1e2433;
+  --muted: #5d6678;
+  --primary: #315efb;
+  --surface: #ffffff;
+  --border: #e2e6ef;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+.page-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.hero {
+  width: min(680px, 100%);
+  padding: 48px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(34, 45, 80, 0.08);
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  margin: 0 0 20px;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.04em;
+}
+
+.description {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+.status {
+  margin: 0;
+  padding: 14px 16px;
+  color: #4a5670;
+  background: #eef2ff;
+  border-radius: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 560px) {
+  .hero {
+    padding: 32px 24px;
+  }
+}
