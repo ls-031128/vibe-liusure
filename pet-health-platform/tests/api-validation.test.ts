@@ -66,6 +66,10 @@ test('GET /api/health-assessments requires petId', async () => {
 test('POST /api/health-assessments rejects missing and empty required values', async (t) => {
   const invalidPayloads = [
     {
+      name: 'missing petId with other fields valid',
+      payload: { riskLevel: '待观察', summary: '继续观察' },
+    },
+    {
       name: 'missing summary',
       payload: { petId: 'pet-1', riskLevel: '待观察' },
     },
