@@ -1,5 +1,7 @@
 # 宠物健康平台 MVP
 
+[![CI tests](https://github.com/ls-031128/vibe-liusure/actions/workflows/test.yml/badge.svg)](https://github.com/ls-031128/vibe-liusure/actions/workflows/test.yml)
+
 这是一个面向普通宠物主人的健康信息辅助工具。产品目标是帮助用户整理宠物基本信息和当前症状，并在后续阶段提供初步风险提示、观察建议和就医提醒。
 
 当前项目处于 Day 4 T2 部署准备阶段，已完成宠物和健康评估记录闭环及 Recharts 图表；数据库配置正从 SQLite 切换为 PostgreSQL。尚未实现 AI 自动评估，也尚未部署到公网。
@@ -68,6 +70,14 @@ npm run build
 ```
 
 测试使用 Node 内置测试运行器，不调用真实 AI。图表数据转换、请求竞态及 ping 测试不需要数据库；宠物和健康评估 API 集成测试需要独立 PostgreSQL 测试数据库。
+
+## Day 5 T2：GitHub Actions CI
+
+仓库根目录的 `.github/workflows/test.yml` 会在每次 `push` 和 Pull Request 时运行测试：checkout 仓库、安装 Node.js 22、执行 `npm install`，然后在 `pet-health-platform/` 中运行 `npm test`。
+
+CI 不配置 Neon 或真实 `DATABASE_URL`。普通测试通过现有隔离启动器运行；需要数据库的集成测试会明确显示为跳过，不会连接线上数据库，也不会删除这些测试。需要在 GitHub 仓库的分支保护规则中将 `Test` 检查设为必需项，测试失败才会阻止合并。
+
+本地可先运行 `npm test` 检查非数据库测试。数据库集成测试需单独按项目的安全流程显式启用。
 
 ## Day 4 T1：Recharts 图表组件接入
 
