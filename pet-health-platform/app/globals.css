@@ -206,6 +206,56 @@ h1 {
   line-height: 1.6;
 }
 
+.charts-section {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.charts-section h2 {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.chart-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.chart-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.chart-wrapper {
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.chart-empty-state {
+  display: grid;
+  min-height: 280px;
+  margin: 12px 0 0;
+  place-items: center;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .feedback {
   margin: 20px 0 0;
   padding: 14px 16px;

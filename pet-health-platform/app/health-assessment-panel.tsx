@@ -1,6 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { createRequestVersion } from '../lib/request-version';
+import HealthAssessmentCharts from './health-assessment-charts';
 
 type Pet = {
   id: string;
@@ -24,13 +27,22 @@ type ApiError = {
 export default function HealthAssessmentPanel() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState('');
-  const [assessments, setAssessments] = useState<HealthAssessment[]>([]);
+  const [assessmentData, setAssessmentData] = useState<{
+    petId: string;
+    records: HealthAssessment[];
+  }>({ petId: '', records: [] });
   const [riskLevel, setRiskLevel] = useState('');
   const [summary, setSummary] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoadingPets, setIsLoadingPets] = useState(true);
   const [isLoadingAssessments, setIsLoadingAssessments] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedPetIdRef = useRef(selectedPetId);
+  const assessmentRequests = useRef(createRequestVersion());
+  const assessmentAbortController = useRef<AbortController | null>(null);
+  selectedPetIdRef.current = selectedPetId;
+  const assessments =
+    assessmentData.petId === selectedPetId ? assessmentData.records : [];
 
   async function loadPets() {
     setIsLoadingPets(true);
@@ -65,17 +77,25 @@ export default function HealthAssessmentPanel() {
   }
 
   async function loadAssessments(petId: string) {
+    const requestVersion = assessmentRequests.current.next();
+    assessmentAbortController.current?.abort();
+    assessmentAbortController.current = null;
+    setAssessmentData({ petId, records: [] });
+
     if (!petId) {
-      setAssessments([]);
+      setIsLoadingAssessments(false);
       return;
     }
 
+    const abortController = new AbortController();
+    assessmentAbortController.current = abortController;
     setIsLoadingAssessments(true);
     setErrorMessage('');
 
     try {
       const response = await fetch(
         `/api/health-assessments?petId=${encodeURIComponent(petId)}`,
+        { signal: abortController.signal },
       );
       const result = (await response.json()) as HealthAssessment[] | ApiError;
 
@@ -87,15 +107,44 @@ export default function HealthAssessmentPanel() {
         );
       }
 
-      setAssessments(result);
+      if (
+        !assessmentRequests.current.isCurrent(requestVersion) ||
+        selectedPetIdRef.current !== petId
+      ) {
+        return;
+      }
+
+      setAssessmentData({ petId, records: result });
     } catch (error) {
+      if (
+        abortController.signal.aborted ||
+        (error instanceof Error && error.name === 'AbortError')
+      ) {
+        return;
+      }
+
+      if (
+        !assessmentRequests.current.isCurrent(requestVersion) ||
+        selectedPetIdRef.current !== petId
+      ) {
+        return;
+      }
+
       setErrorMessage(
         error instanceof Error
           ? error.message
           : '读取健康评估记录失败，请稍后重试',
       );
     } finally {
-      setIsLoadingAssessments(false);
+      if (
+        assessmentRequests.current.isCurrent(requestVersion) &&
+        selectedPetIdRef.current === petId
+      ) {
+        setIsLoadingAssessments(false);
+        if (assessmentAbortController.current === abortController) {
+          assessmentAbortController.current = null;
+        }
+      }
     }
   }
 
@@ -105,10 +154,17 @@ export default function HealthAssessmentPanel() {
 
   useEffect(() => {
     void loadAssessments(selectedPetId);
+
+    return () => {
+      assessmentRequests.current.invalidate();
+      assessmentAbortController.current?.abort();
+      assessmentAbortController.current = null;
+    };
   }, [selectedPetId]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const submittedPetId = selectedPetId;
     setErrorMessage('');
     setIsSubmitting(true);
 
@@ -117,7 +173,7 @@ export default function HealthAssessmentPanel() {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          petId: selectedPetId,
+          petId: submittedPetId,
           riskLevel,
           summary,
         }),
@@ -132,10 +188,19 @@ export default function HealthAssessmentPanel() {
         );
       }
 
-      setAssessments((currentAssessments) => [
-        result as HealthAssessment,
-        ...currentAssessments,
-      ]);
+      if (selectedPetIdRef.current === submittedPetId) {
+        assessmentRequests.current.invalidate();
+        assessmentAbortController.current?.abort();
+        assessmentAbortController.current = null;
+        setIsLoadingAssessments(false);
+        setAssessmentData((currentData) => ({
+          petId: submittedPetId,
+          records: [
+            result as HealthAssessment,
+            ...(currentData.petId === submittedPetId ? currentData.records : []),
+          ],
+        }));
+      }
       setRiskLevel('');
       setSummary('');
     } catch (error) {
@@ -235,6 +300,8 @@ export default function HealthAssessmentPanel() {
           </div>
         </>
       ) : null}
+
+      <HealthAssessmentCharts assessments={assessments} />
 
       {errorMessage ? (
         <p className="feedback error-message" role="alert">

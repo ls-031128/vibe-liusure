@@ -1,13 +1,9 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { databaseTest } from './database-test.ts';
 
-import {
-  GET,
-  POST,
-} from '../app/api/health-assessments/route.ts';
-import prisma from '../lib/prisma.ts';
-
-test('POST /api/health-assessments persists and GET returns a record', async () => {
+databaseTest('POST /api/health-assessments persists and GET returns a record', async () => {
+  const { GET, POST } = await import('../app/api/health-assessments/route.ts');
+  const { default: prisma } = await import('../lib/prisma.ts');
   const pet = await prisma.pet.create({
     data: {
       id: `assessment-pet-${Date.now()}`,
@@ -66,7 +62,8 @@ test('POST /api/health-assessments persists and GET returns a record', async () 
   }
 });
 
-test('POST /api/health-assessments rejects invalid data', async () => {
+databaseTest('POST /api/health-assessments rejects invalid data', async () => {
+  const { POST } = await import('../app/api/health-assessments/route.ts');
   const response = await POST(
     new Request('http://localhost/api/health-assessments', {
       method: 'POST',
@@ -81,7 +78,8 @@ test('POST /api/health-assessments rejects invalid data', async () => {
   });
 });
 
-test('GET /api/health-assessments requires a petId', async () => {
+databaseTest('GET /api/health-assessments requires a petId', async () => {
+  const { GET } = await import('../app/api/health-assessments/route.ts');
   const response = await GET(
     new Request('http://localhost/api/health-assessments'),
   );

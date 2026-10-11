@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { databaseTest } from './database-test.ts';
 
-import { GET, POST } from '../app/api/pets/route.ts';
-import prisma from '../lib/prisma.ts';
-
-test('POST /api/pets creates and returns a pet', async () => {
+databaseTest('POST /api/pets creates and returns a pet', async () => {
+  const { GET, POST } = await import('../app/api/pets/route.ts');
+  const { default: prisma } = await import('../lib/prisma.ts');
   const payload = {
     name: `测试宠物-${Date.now()}`,
     species: '猫',
@@ -44,7 +43,8 @@ test('POST /api/pets creates and returns a pet', async () => {
   await prisma.pet.delete({ where: { id: created.id } });
 });
 
-test('POST /api/pets rejects invalid pet data', async () => {
+databaseTest('POST /api/pets rejects invalid pet data', async () => {
+  const { POST } = await import('../app/api/pets/route.ts');
   const response = await POST(
     new Request('http://localhost/api/pets', {
       method: 'POST',
@@ -59,7 +59,9 @@ test('POST /api/pets rejects invalid pet data', async () => {
   });
 });
 
-test('GET /api/pets returns saved pets', async () => {
+databaseTest('GET /api/pets returns saved pets', async () => {
+  const { GET } = await import('../app/api/pets/route.ts');
+  const { default: prisma } = await import('../lib/prisma.ts');
   const pet = await prisma.pet.create({
     data: {
       id: `test-pet-${Date.now()}`,
