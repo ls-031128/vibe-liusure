@@ -272,6 +272,12 @@ h1 {
   background: #eaf8ef;
 }
 
+.ai-answer {
+  background: #eef2ff;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .error-message {
   color: #8d2727;
   background: #fff0f0;

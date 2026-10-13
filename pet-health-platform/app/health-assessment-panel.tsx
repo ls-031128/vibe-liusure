@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { createRequestVersion } from '../lib/request-version';
+import AiPetAdvicePanel from './ai-pet-advice-panel';
 import HealthAssessmentCharts from './health-assessment-charts';
 
 type Pet = {
@@ -302,6 +303,10 @@ export default function HealthAssessmentPanel() {
       ) : null}
 
       <HealthAssessmentCharts assessments={assessments} />
+
+      {selectedPetId ? (
+        <AiPetAdvicePanel key={selectedPetId} petId={selectedPetId} />
+      ) : null}
 
       {errorMessage ? (
         <p className="feedback error-message" role="alert">

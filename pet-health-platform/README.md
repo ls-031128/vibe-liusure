@@ -4,7 +4,7 @@
 
 这是一个面向普通宠物主人的健康信息辅助工具。产品目标是帮助用户整理宠物基本信息和当前症状，并在后续阶段提供初步风险提示、观察建议和就医提醒。
 
-当前项目处于 Day 4 T2 部署准备阶段，已完成宠物和健康评估记录闭环及 Recharts 图表；数据库配置正从 SQLite 切换为 PostgreSQL。尚未实现 AI 自动评估，也尚未部署到公网。
+当前已完成宠物和用户手动健康评估记录闭环、Recharts 图表，以及 Day 7 的 DeepSeek AI 护理建议助手。数据库使用 PostgreSQL；AI 助手不会创建评估记录或执行医学诊断。公网部署状态仍需单独验收。
 
 ## 本地启动
 
@@ -17,7 +17,7 @@ npm run dev
 
 启动后访问 [http://localhost:3000](http://localhost:3000)。首页会显示“宠物健康平台 MVP”和当前处于开发阶段的说明。
 
-当前不需要真实 AI Key。配置本地环境时，按 `.env.example` 提供的变量名填写 PostgreSQL 连接地址；不要将真实连接 URL 提交到 Git。
+宠物和评估记录功能不需要 AI Key；使用 AI 助手需要配置服务端 DeepSeek Key。配置本地环境时，按 `.env.example` 提供的变量名填写 PostgreSQL 连接地址；不要将真实连接 URL 或 Key 提交到 Git。
 
 ## 项目协作约束
 
@@ -73,7 +73,7 @@ npm run build
 
 ## Day 5 T2：GitHub Actions CI
 
-仓库根目录的 `.github/workflows/test.yml` 会在每次 `push` 和 Pull Request 时运行测试：checkout 仓库、安装 Node.js 22、执行 `npm install`，然后在 `pet-health-platform/` 中运行 `npm test`。
+仓库根目录的 `.github/workflows/test.yml` 会在每次 `push` 和 Pull Request 时运行测试：checkout 仓库、安装 Node.js 22、执行 `npm install`、生成 Prisma Client，然后在 `pet-health-platform/` 中运行 `npm test`。
 
 CI 不配置 Neon 或真实 `DATABASE_URL`。普通测试通过现有隔离启动器运行；需要数据库的集成测试会明确显示为跳过，不会连接线上数据库，也不会删除这些测试。需要在 GitHub 仓库的分支保护规则中将 `Test` 检查设为必需项，测试失败才会阻止合并。
 
@@ -133,9 +133,49 @@ npm run build
 - production build 会自动修改 `next-env.d.ts` 的类型路径。确认这是构建生成变化后已恢复，未保留在本阶段功能 diff 中。
 - production build 提示仓库外存在 `package-lock.json`，Next.js 忽略了该文件；该提示不影响本地构建结果。
 
-## 当前 Day 3 暂未实现
+## Day 7：DeepSeek AI 宠物健康助手
 
-- 真实 AI 调用和 Fake AI Provider
+### 配置和使用
+
+在项目本地 `.env` 中配置以下服务端变量；示例中的 Key 留空，由开发者自行填写。`.env` 已被 Git 忽略。没有有效 Key 时助手返回友好错误，原有记录功能继续可用。
+
+```dotenv
+AI_API_BASE_URL=https://api.deepseek.com
+AI_API_KEY=
+AI_MODEL=deepseek-flash
+```
+
+配置后重新启动开发服务。在健康评估区域选择宠物，输入问题并点击“获取 AI 建议”。当前运行时仍需要 PostgreSQL `DATABASE_URL`；如果本地 `.env` 保留 SQLite 归档地址，应仅向启动子进程提供 PostgreSQL 运行时地址，不改写或导入 SQLite 归档。
+
+模型与请求格式依据 [DeepSeek Chat Completions 官方文档](https://api-docs.deepseek.com/api/create-chat-completion/)。API Key 只在服务端读取；页面仅调用本站接口，不接触 DeepSeek Key。
+
+### 数据流程与文件职责
+
+- `app/api/ai/pet-advice/route.ts`：接收 `POST {petId, question}`，校验输入，查询当前宠物和最近 5 条评估记录，返回 `{answer}`。缺少字段返回 400，宠物不存在返回 404。
+- `lib/ai-pet-advice.ts`：构建结构化上下文并调用 DeepSeek `/chat/completions`，使用非思考、非流式模式，最多生成 1024 tokens，20 秒超时；错误 Key、余额不足、网络异常、超时及异常响应统一返回 503 和“AI服务暂时不可用，请稍后重试”。
+- `app/ai-pet-advice-panel.tsx`：输入、提交、加载、错误和纯文本回复区域。随宠物 ID 切换重新挂载，清空此前内容并取消旧请求；请求版本检查阻止迟到回复更新界面。
+- `tests/ai-pet-advice.test.ts`：通过数据库查询和 HTTP 调用的替身，测试实际 Route Handler；不连接真实数据库或调用收费 AI。
+
+问题最多 2000 字。上下文包含名称、年龄、物种、最近风险标签和评估摘要；当前模型未保存品种，所以明确传入“品种未记录”，不会从物种推测品种。每条历史摘要超过 2000 字时会注明截断。
+
+用户填写的 `riskLevel` 不是医学风险评分。提示词要求不诊断、不提供处方、药物剂量或自我治疗方案，不编造事实，明确不确定性并提醒咨询兽医；服务端还为每条回复添加固定提醒。提示词和提醒不能保证模型内容医学正确，仍需人工判断。
+
+问题与 AI 回复不会写入数据库。点击提交时，当前宠物资料、近期评估和问题会发送到 DeepSeek，页面对此有明确说明。当前接口沿用课程 MVP 的无登录模式，尚未实现用户配额控制。
+
+### 验证方式
+
+```bash
+node --test tests/ai-pet-advice.test.ts
+npm test
+npm run typecheck
+```
+
+自动化用例覆盖缺少 `petId`、缺少 `question`、空白/过长问题、宠物不存在、正确上下文和成功响应、无历史记录、Key 未配置、错误 Key、余额不足、网络异常、超时和空回复。真实 DeepSeek 成功调用及浏览器端交互需在配置有效 Key 和 PostgreSQL 运行时地址后手动验证：提交问题、查看回复、切换宠物、检查错误提示。本次自动化测试不会将这些手动验收视为通过。
+
+本次验证结果：AI 接口测试 13 通过；全部测试 32 通过、0 失败、7 个数据库集成测试按既有隔离机制跳过；TypeScript 检查通过。生产构建通过，并生成动态路由 `/api/ai/pet-advice`。构建仅向当前进程注入本机占位 PostgreSQL URL，未连接真实数据库；未调用真实 DeepSeek API。
+
+## 当前暂未实现
+
 - 独立的宠物管理页面
 - AI 自动评估和疾病诊断
 - 登录、健康档案和多宠物管理
