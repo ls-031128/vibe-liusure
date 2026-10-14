@@ -29,3 +29,10 @@ ALTER TABLE "health_assessments"
   ADD CONSTRAINT "health_assessments_pet_id_fkey"
   FOREIGN KEY ("pet_id") REFERENCES "pets"("id")
   ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE TABLE "visitors" (
+  "id" TEXT NOT NULL,
+  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "path" TEXT NOT NULL DEFAULT '/',
+  CONSTRAINT "visitors_pkey" PRIMARY KEY ("id")
+);

@@ -4,5 +4,6 @@ tsconfig.tsbuildinfo
 .env
 .env.*
 !.env.example
+!.env.production.example
 prisma/*.db
 generated/

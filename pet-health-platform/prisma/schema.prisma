@@ -29,3 +29,11 @@ model HealthAssessment {
   @@index([petId])
   @@map("health_assessments")
 }
+
+model Visitor {
+  id        String   @id
+  createdAt DateTime @default(now()) @map("created_at")
+  path      String   @default("/")
+
+  @@map("visitors")
+}

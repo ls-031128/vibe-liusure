@@ -59,37 +59,38 @@ export default function AiPetAdvicePanel({ petId }: { petId: string }) {
   }
 
   return (
-    <section className="registration-card" aria-labelledby="ai-advice-title">
-      <h3 id="ai-advice-title">AI 宠物健康助手</h3>
-      <p className="section-description">
-        提供日常护理和观察建议，存在不确定性，不能替代兽医诊断。
-        评估记录由用户手动填写；情况严重或持续恶化时请咨询兽医。
-      </p>
-      <p className="muted-message">
-        提交后，当前宠物基本资料、最近评估记录和问题会发送至 DeepSeek。
-        请勿输入个人身份信息；本平台不保存问题和 AI 回复。
-      </p>
-      <form className="pet-form" onSubmit={handleSubmit}>
-        <label htmlFor="ai-question">宠物健康问题</label>
-        <textarea
-          id="ai-question"
-          required
-          maxLength={2000}
-          rows={4}
-          value={question}
-          disabled={isSubmitting}
-          onChange={(event) => setQuestion(event.target.value)}
-          placeholder="例如：最近活动变少，我可以记录哪些观察信息？"
-        />
-        <button type="submit" disabled={isSubmitting || !question.trim()}>
-          {isSubmitting ? '正在获取建议…' : '获取 AI 建议'}
-        </button>
-      </form>
-      <div aria-live="polite" aria-busy={isSubmitting}>
-        {isSubmitting ? <p className="muted-message">AI 正在整理建议，请稍候…</p> : null}
-        {answer ? <p className="feedback ai-answer">{answer}</p> : null}
+    <section id="ai-assistant" className="surface-card scroll-mt-6" aria-labelledby="ai-advice-title">
+      <div className="section-heading">
+        <div><p className="eyebrow">03 / AI ASSISTANT</p><h2 id="ai-advice-title">AI 健康助手</h2></div>
+        <span className="badge">DeepSeek</span>
+      </div>
+      <p className="section-description">结合当前宠物资料与最近记录，整理日常护理和观察建议。</p>
+      <div className="mb-5" aria-live="polite" aria-busy={isSubmitting}>
+        {!answer && !isSubmitting && !error ? (
+          <div className="empty-state"><span className="empty-symbol" aria-hidden="true">✧</span><p className="font-medium">向 AI 咨询宠物健康问题</p><small>例如：最近活动变少，我可以记录哪些观察信息？</small></div>
+        ) : null}
+        {isSubmitting ? (
+          <div className="flex min-h-32 items-center justify-center gap-3 rounded-xl bg-teal-50/50 text-sm text-teal-800" role="status">
+            <span className="flex gap-1" aria-hidden="true"><span className="loading-dot" /><span className="loading-dot" /><span className="loading-dot" /></span>
+            AI 正在整理建议，请稍候…
+          </div>
+        ) : null}
+        {answer ? <div><p className="mb-2 text-xs font-medium text-teal-800">✧ AI 的建议</p><p className="ai-answer">{answer}</p></div> : null}
         {error ? <p className="feedback error-message" role="alert">{error}</p> : null}
       </div>
+      <form className="pet-form" onSubmit={handleSubmit}>
+        <label htmlFor="ai-question">你的问题</label>
+        <textarea id="ai-question" required maxLength={2000} rows={3} value={question} disabled={isSubmitting}
+          onChange={(event) => setQuestion(event.target.value)} placeholder="描述你观察到的变化，尽量具体一些…" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs text-slate-500">{question.length} / 2000</span>
+          <button type="submit" disabled={isSubmitting || !question.trim()}>{isSubmitting ? '正在获取建议…' : '发送问题 →'}</button>
+        </div>
+      </form>
+      <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3 text-xs leading-6 text-amber-900">
+        AI 建议存在不确定性，不能替代兽医诊断。评估记录由用户手动填写；情况严重或持续恶化时请咨询兽医。
+      </div>
+      <p className="mt-3 text-xs leading-6 text-slate-500">提交后，当前宠物资料、最近评估记录和问题会发送至 DeepSeek。请勿输入个人身份信息；本平台不保存问题和 AI 回复。</p>
     </section>
   );
 }

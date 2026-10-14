@@ -63,65 +63,19 @@ export default function PetRegistrationForm() {
   }
 
   return (
-    <section className="registration-card" aria-labelledby="registration-title">
-      <h2 id="registration-title">录入宠物基本信息</h2>
-      <p className="section-description">
-        先保存宠物名称、物种和年龄，后续健康信息功能将在此基础上逐步完善。
-      </p>
-
+    <section aria-labelledby="registration-title">
+      <h3 id="registration-title" className="text-sm font-semibold">添加新伙伴</h3>
+      <p className="mb-4 mt-2 text-xs leading-6 text-slate-500">记录基本信息。保存后点击上方“刷新列表”查看。</p>
       <form className="pet-form" onSubmit={handleSubmit}>
-        <label>
-          宠物名称
-          <input
-            required
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="例如：团团"
-          />
-        </label>
-
-        <label>
-          物种
-          <input
-            required
-            value={species}
-            onChange={(event) => setSpecies(event.target.value)}
-            placeholder="例如：猫"
-          />
-        </label>
-
-        <label>
-          年龄
-          <input
-            required
-            min="0"
-            step="1"
-            type="number"
-            value={age}
-            onChange={(event) => setAge(event.target.value)}
-            placeholder="例如：3"
-          />
-        </label>
-
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? '保存中…' : '保存宠物信息'}
-        </button>
-      </form>
-
-      {errorMessage ? (
-        <p className="feedback error-message" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
-
-      {savedPet ? (
-        <div className="feedback success-message" role="status">
-          <strong>保存成功</strong>
-          <p>
-            {savedPet.name}（{savedPet.species}，{savedPet.age} 岁）已保存。
-          </p>
+        <label>宠物名称<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：团团" /></label>
+        <div className="grid grid-cols-2 gap-3">
+          <label>物种<input required value={species} onChange={(event) => setSpecies(event.target.value)} placeholder="例如：猫" /></label>
+          <label>年龄（岁）<input required min="0" step="1" type="number" value={age} onChange={(event) => setAge(event.target.value)} placeholder="例如：3" /></label>
         </div>
-      ) : null}
+        <button type="submit" disabled={isSubmitting}>{isSubmitting ? '保存中…' : '＋ 添加宠物'}</button>
+      </form>
+      {errorMessage ? <p className="feedback error-message" role="alert">{errorMessage}</p> : null}
+      {savedPet ? <div className="feedback success-message" role="status"><strong>保存成功</strong><p>{savedPet.name}（{savedPet.species}，{savedPet.age} 岁）已保存。</p></div> : null}
     </section>
   );
 }

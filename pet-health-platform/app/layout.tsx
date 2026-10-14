@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: '宠物健康平台 MVP',
-  description: '宠物健康信息辅助工具开发阶段首页',
+  description: 'AI 驱动的宠物健康管理平台：记录日常观察，回顾健康趋势，获取护理建议；不替代兽医诊断。',
 };
 
 export default function RootLayout({

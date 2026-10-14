@@ -4,7 +4,7 @@
 
 这是一个面向普通宠物主人的健康信息辅助工具。产品目标是帮助用户整理宠物基本信息和当前症状，并在后续阶段提供初步风险提示、观察建议和就医提醒。
 
-当前已完成宠物和用户手动健康评估记录闭环、Recharts 图表，以及 Day 7 的 DeepSeek AI 护理建议助手。数据库使用 PostgreSQL；AI 助手不会创建评估记录或执行医学诊断。公网部署状态仍需单独验收。
+当前已完成宠物和用户手动健康评估记录闭环、Recharts 图表，以及 Day 7 的 DeepSeek AI 护理建议助手。数据库使用 PostgreSQL；AI 助手不会创建评估记录或执行医学诊断。现有 Vercel 公网地址为 [vibe-liusure.vercel.app](https://vibe-liusure.vercel.app)；访问统计变更仍需迁移与重新部署，完整手机验收见 [线上部署验收](../docs/线上部署验收.md)。
 
 ## 本地启动
 
@@ -27,7 +27,7 @@ npm run dev
 
 Day 4 T2 使用 PostgreSQL + Prisma 7。Prisma Schema 位于 `prisma/schema.prisma`，PostgreSQL migration 历史位于 `prisma/migrations-postgresql/`，生成的 Client 位于 `generated/prisma/`。原 SQLite migration 保留在 `prisma/migrations/`，历史结构参考为 `db/schema.sqlite.sql`；`prisma/dev.db` 原文件作为本地数据归档保留，不会自动导入线上数据库。
 
-数据库只保存 `pets` 和 `health_assessments` 的最小必要字段，不保存用户原始健康文本、用户身份信息或疾病诊断数据。迁移到新 PostgreSQL 数据库只通过 Prisma migration 建表，不导入 SQLite 中的任何记录。
+数据库 Schema 定义 `pets`、`health_assessments` 和新加入的 `visitors` 表。访问记录只保存 ID 和时间，不保存身份信息。`visitors` 迁移尚待部署时执行；不保存 AI 问题/回复或疾病诊断数据，不导入 SQLite 中的任何记录。
 
 配置生成与校验：
 
@@ -173,6 +173,43 @@ npm run typecheck
 自动化用例覆盖缺少 `petId`、缺少 `question`、空白/过长问题、宠物不存在、正确上下文和成功响应、无历史记录、Key 未配置、错误 Key、余额不足、网络异常、超时和空回复。真实 DeepSeek 成功调用及浏览器端交互需在配置有效 Key 和 PostgreSQL 运行时地址后手动验证：提交问题、查看回复、切换宠物、检查错误提示。本次自动化测试不会将这些手动验收视为通过。
 
 本次验证结果：AI 接口测试 13 通过；全部测试 32 通过、0 失败、7 个数据库集成测试按既有隔离机制跳过；TypeScript 检查通过。生产构建通过，并生成动态路由 `/api/ai/pet-advice`。构建仅向当前进程注入本机占位 PostgreSQL URL，未连接真实数据库；未调用真实 DeepSeek API。
+
+## Docker 部署准备与首页访问统计
+
+生产部署入口为 `Dockerfile` 和 `docker-compose.yml`，采用 Node.js 22、Next.js standalone、多阶段构建及非 root 用户。构建使用锁文件和占位 PostgreSQL URL；真实数据库连接与 AI Key 仅在容器运行时通过服务器 `.env.production` 注入。`.dockerignore` 排除本地环境文件、SQLite 归档及构建产物。
+
+在 Ubuntu 服务器填写 `.env.production` 后启动：
+
+```bash
+docker compose --env-file .env.production config -q
+docker compose --env-file .env.production up -d --build
+docker compose --env-file .env.production ps
+```
+
+部署前还需应用 `20261014000000_add_visitors` 迁移。当前受保护迁移脚本仅接受人工核验的 Neon test 分支，不能绕过保护对 production 执行迁移。详细环境配置、迁移、上传、启动和验收方法见 [部署手册](../docs/部署手册.md)，实际验证状态见 [部署记录](../docs/部署记录.md)。
+
+首页 `VisitTracker` 在客户端挂载后异步提交 `POST /api/visitors`，保存 `id`、`createdAt` 和固定路径 `/`；不保存查询参数或身份信息。页面不等待请求结果，网络、HTTP 或数据库失败均静默处理。开发 Strict Mode 的重复 effect 共享同一个记录请求，不重复发送同次挂载事件。统计的是尽力而为的页面访问事件，刷新可增加计数，不是唯一访客人数。
+
+记录请求完成后，组件独立调用 `GET /api/visitors`，读取首页累计次数并显示在页面底部；数据库不可用时返回 `{count:null}`，客户端隐藏统计区域，不显示错误或假造为 0。GET 使用 `no-store`，不影响原有宠物、评估和 AI 功能。
+
+新增路径迁移为 `20261014010000_add_visitor_path`，通过非空默认值 `/` 回填旧访问事件；保留原建表迁移，不删除已有记录。本轮未执行线上迁移，也未重新部署。
+
+新增测试位于 `tests/visitors.test.ts`，验证数据库写入参数、事件 ID 唯一、数据库失败静默，以及客户端成功、网络失败和 HTTP 失败行为。测试使用数据库替身，不代表已在真实数据库中验证访问统计。
+
+## UI/UX 展示层优化
+
+采用 Tailwind CSS 4 和 PostCSS，保留现有 API、数据库与请求控制逻辑。柔和蓝绿色主题、白色卡片与响应式仪表盘覆盖宠物资料、健康时间线、图表和 AI 助手；手机视口下自动切换为单列。表单保留标签与键盘焦点，按钮至少 44px 高，动画尊重减少动态效果偏好。
+
+宠物数量来自既有宠物列表；评估数量仅统计当前所选宠物，不是所有宠物的总数。加载或读取失败时不假造统计值。品种尚无数据字段，显示“未记录”；风险提示保留用户原始文字，图表配色仅区分类别，不表示医学等级。新增宠物后仍需点击“刷新列表”，沿用现有流程。
+
+本地运行 `npm run dev`。准备有效 PostgreSQL 运行时配置后，建议截图：
+
+- 桌面 1440px：产品 Header、概览统计和左右卡片布局。
+- 手机 390px：单列宠物卡片、健康记录、图表和 AI 助手。
+- 有记录时的图表与时间线，以及没有记录时的空状态。
+- AI 的初始提示、加载状态、成功回复及失败提示。
+
+自动化回归使用 `npm test`、`npm run typecheck` 和 `npm run build`。当前本地 SQLite 归档地址不适用于 PostgreSQL 运行时；可用已受保护的 `build:safe` 完成课程构建验证，不要覆盖归档配置。上线时使用独立 Production 环境变量。
 
 ## 当前暂未实现
 

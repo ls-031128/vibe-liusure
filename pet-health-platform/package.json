@@ -27,11 +27,14 @@
     "recharts": "3.10.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "latest",
     "@types/pg": "8.23.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "postcss": "8.5.30",
     "prisma": "7.10.0",
+    "tailwindcss": "4.3.3",
     "typescript": "latest"
   }
 }
