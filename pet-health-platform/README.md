@@ -2,9 +2,17 @@
 
 [![CI tests](https://github.com/ls-031128/vibe-liusure/actions/workflows/test.yml/badge.svg)](https://github.com/ls-031128/vibe-liusure/actions/workflows/test.yml)
 
-这是一个面向普通宠物主人的健康信息辅助工具。产品目标是帮助用户整理宠物基本信息和当前症状，并在后续阶段提供初步风险提示、观察建议和就医提醒。
+这是一个面向普通宠物主人的健康信息辅助工具，支持宠物资料录入、手动健康观察记录、风险标签可视化及 AI 日常护理建议，不进行疾病诊断。
 
-当前已完成宠物和用户手动健康评估记录闭环、Recharts 图表，以及 Day 7 的 DeepSeek AI 护理建议助手。数据库使用 PostgreSQL；AI 助手不会创建评估记录或执行医学诊断。现有 Vercel 公网地址为 [vibe-liusure.vercel.app](https://vibe-liusure.vercel.app)；访问统计变更仍需迁移与重新部署，完整手机验收见 [线上部署验收](../docs/线上部署验收.md)。
+当前已完成宠物和用户手动健康评估记录闭环、Recharts 图表，以及 Day 7 的 DeepSeek AI 护理建议助手。数据库使用 PostgreSQL；AI 助手不会创建评估记录或执行医学诊断。当前已部署至 Vercel，并连接 Neon PostgreSQL；在线地址为 [vibe-liusure.vercel.app](https://vibe-liusure.vercel.app)。Visitor 统计已修复，DeepSeek AI 已接入。
+
+## Day 9 上线状态
+
+更新日期：2026-10-14。本轮只读检查：首页 HTTP 200，`/api/ping` 返回 `{"ok":true}`，`GET /api/visitors` 返回 HTTP 200 和 `{"count":8}`。8 是检查时的累计值，不是固定值，也不表示唯一访客人数。本轮未创建记录、执行迁移或调用收费 AI。
+
+当前技术栈为 Next.js App Router、React、TypeScript、Tailwind CSS、Prisma 7、Neon PostgreSQL、Recharts 和服务端 DeepSeek API。页面通过本站 API 读写数据库；AI 接口读取宠物及近期手动记录，在服务端调用 DeepSeek，Key 不发送到浏览器。
+
+当前部署与更新入口见 [部署手册](../docs/部署手册.md)。[线上部署验收](../docs/线上部署验收.md)保留手机、真实 AI 和统计落库验收步骤，其中此前的 404 等历史检查不代表当前状态；Day 9 最新 HTTP 结果以上表述为准。教师手机实测、刷新计数增量及真实 AI 成功问答的证据仍需人工补齐。
 
 ## 本地启动
 
@@ -12,10 +20,12 @@
 
 ```bash
 npm install
+# 先按 .env.example 配置 PostgreSQL DATABASE_URL 和 DIRECT_URL
+npm run db:generate
 npm run dev
 ```
 
-启动后访问 [http://localhost:3000](http://localhost:3000)。首页会显示“宠物健康平台 MVP”和当前处于开发阶段的说明。
+启动后访问 [http://localhost:3000](http://localhost:3000)。首页显示产品 Header、宠物概览、健康评估与图表、AI 助手。
 
 宠物和评估记录功能不需要 AI Key；使用 AI 助手需要配置服务端 DeepSeek Key。配置本地环境时，按 `.env.example` 提供的变量名填写 PostgreSQL 连接地址；不要将真实连接 URL 或 Key 提交到 Git。
 
@@ -27,7 +37,7 @@ npm run dev
 
 Day 4 T2 使用 PostgreSQL + Prisma 7。Prisma Schema 位于 `prisma/schema.prisma`，PostgreSQL migration 历史位于 `prisma/migrations-postgresql/`，生成的 Client 位于 `generated/prisma/`。原 SQLite migration 保留在 `prisma/migrations/`，历史结构参考为 `db/schema.sqlite.sql`；`prisma/dev.db` 原文件作为本地数据归档保留，不会自动导入线上数据库。
 
-数据库 Schema 定义 `pets`、`health_assessments` 和新加入的 `visitors` 表。访问记录只保存 ID 和时间，不保存身份信息。`visitors` 迁移尚待部署时执行；不保存 AI 问题/回复或疾病诊断数据，不导入 SQLite 中的任何记录。
+数据库 Schema 定义 `pets`、`health_assessments` 和新加入的 `visitors` 表。访问记录保存 ID、时间和固定首页路径 `/`，不保存身份信息。当前线上统计查询已恢复；不保存 AI 问题/回复或疾病诊断数据，不导入 SQLite 中的任何记录。
 
 配置生成与校验：
 
@@ -37,7 +47,7 @@ npm run db:validate
 npm run db:generate
 ```
 
-实际连接 Neon 前，应先配置 `DIRECT_URL`。只有在确认连接指向正确的空 PostgreSQL 数据库后，才运行 `npm run db:migrate:deploy`。
+实际连接 Neon 前，应先配置 `DIRECT_URL`。现有 `npm run db:migrate:deploy` 仅适用于人工核验的 Neon test 分支；不要用于 production 或绕过保护。当前上线不需要为了文档同步再次执行迁移，后续结构变更须先核对实际目标、备份并按批准流程处理。
 
 数据库 API 集成测试仅在设置独立的 `TEST_DATABASE_URL` 后执行；没有该变量时会明确跳过这些测试。不得将该变量指向生产数据库。
 
@@ -172,11 +182,11 @@ npm run typecheck
 
 自动化用例覆盖缺少 `petId`、缺少 `question`、空白/过长问题、宠物不存在、正确上下文和成功响应、无历史记录、Key 未配置、错误 Key、余额不足、网络异常、超时和空回复。真实 DeepSeek 成功调用及浏览器端交互需在配置有效 Key 和 PostgreSQL 运行时地址后手动验证：提交问题、查看回复、切换宠物、检查错误提示。本次自动化测试不会将这些手动验收视为通过。
 
-本次验证结果：AI 接口测试 13 通过；全部测试 32 通过、0 失败、7 个数据库集成测试按既有隔离机制跳过；TypeScript 检查通过。生产构建通过，并生成动态路由 `/api/ai/pet-advice`。构建仅向当前进程注入本机占位 PostgreSQL URL，未连接真实数据库；未调用真实 DeepSeek API。
+Day 7 当时的验证结果：AI 接口测试 13 通过；全部测试 32 通过、0 失败、7 个数据库集成测试按既有隔离机制跳过；TypeScript 检查通过。生产构建通过，并生成动态路由 `/api/ai/pet-advice`。构建仅向当前进程注入本机占位 PostgreSQL URL，未连接真实数据库；未调用真实 DeepSeek API。
 
-## Docker 部署准备与首页访问统计
+## 当前 Vercel 部署、Docker 备选与首页访问统计
 
-生产部署入口为 `Dockerfile` 和 `docker-compose.yml`，采用 Node.js 22、Next.js standalone、多阶段构建及非 root 用户。构建使用锁文件和占位 PostgreSQL URL；真实数据库连接与 AI Key 仅在容器运行时通过服务器 `.env.production` 注入。`.dockerignore` 排除本地环境文件、SQLite 归档及构建产物。
+当前实际部署采用 Vercel + Neon；`Dockerfile` 和 `docker-compose.yml` 是 Ubuntu 备选路线，尚未在服务器执行。备选方案采用 Node.js 22、Next.js standalone、多阶段构建及非 root 用户。构建使用锁文件和占位 PostgreSQL URL；真实数据库连接与 AI Key 仅在容器运行时通过服务器 `.env.production` 注入。`.dockerignore` 排除本地环境文件、SQLite 归档及构建产物。
 
 在 Ubuntu 服务器填写 `.env.production` 后启动：
 
@@ -186,13 +196,13 @@ docker compose --env-file .env.production up -d --build
 docker compose --env-file .env.production ps
 ```
 
-部署前还需应用 `20261014000000_add_visitors` 迁移。当前受保护迁移脚本仅接受人工核验的 Neon test 分支，不能绕过保护对 production 执行迁移。详细环境配置、迁移、上传、启动和验收方法见 [部署手册](../docs/部署手册.md)，实际验证状态见 [部署记录](../docs/部署记录.md)。
+新建部署环境应核对 `20261014000000_add_visitors` 和 `20261014010000_add_visitor_path` 两份迁移。当前线上统计已修复，本轮不重复执行迁移。当前受保护迁移脚本仅接受人工核验的 Neon test 分支，不能绕过保护对 production 执行迁移。详细环境配置、迁移、上传、启动和验收方法见 [部署手册](../docs/部署手册.md)，实际验证状态见 [部署记录](../docs/部署记录.md)。
 
 首页 `VisitTracker` 在客户端挂载后异步提交 `POST /api/visitors`，保存 `id`、`createdAt` 和固定路径 `/`；不保存查询参数或身份信息。页面不等待请求结果，网络、HTTP 或数据库失败均静默处理。开发 Strict Mode 的重复 effect 共享同一个记录请求，不重复发送同次挂载事件。统计的是尽力而为的页面访问事件，刷新可增加计数，不是唯一访客人数。
 
 记录请求完成后，组件独立调用 `GET /api/visitors`，读取首页累计次数并显示在页面底部；数据库不可用时返回 `{count:null}`，客户端隐藏统计区域，不显示错误或假造为 0。GET 使用 `no-store`，不影响原有宠物、评估和 AI 功能。
 
-新增路径迁移为 `20261014010000_add_visitor_path`，通过非空默认值 `/` 回填旧访问事件；保留原建表迁移，不删除已有记录。本轮未执行线上迁移，也未重新部署。
+新增路径迁移为 `20261014010000_add_visitor_path`，通过非空默认值 `/` 回填旧访问事件；保留原建表迁移，不删除已有记录。Day 9 文档同步时线上统计已正常返回数字；本轮未执行迁移或重新部署。
 
 新增测试位于 `tests/visitors.test.ts`，验证数据库写入参数、事件 ID 唯一、数据库失败静默，以及客户端成功、网络失败和 HTTP 失败行为。测试使用数据库替身，不代表已在真实数据库中验证访问统计。
 
@@ -215,5 +225,5 @@ docker compose --env-file .env.production ps
 
 - 独立的宠物管理页面
 - AI 自动评估和疾病诊断
-- 登录、健康档案和多宠物管理
+- 登录与按用户隔离的宠物管理、长期健康档案
 - 社区、商城、在线问诊和预约挂号
